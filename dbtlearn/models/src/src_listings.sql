@@ -4,6 +4,8 @@ select * from airbnb.raw.raw_listings
 
 select id as listing_id,
 name as listing_name,
+room_type,
+minimum_nights,
 listing_url,
 host_id,
 price as price_str,
