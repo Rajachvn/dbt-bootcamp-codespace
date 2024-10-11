@@ -18,7 +18,11 @@ models:
         description: Type of the apartment / room
         tests:
           - accepted_values:
-              values: ['Entire home/apt', 'Private room', 'Shared room', 'Hotel room']
+              values:
+                - Entire home/apt
+                - Private room
+                - Shared room
+                - Hotel room
       - name: minimum_nights
         description: '{{ doc("dim_listing_cleansed__minimum_nights") }}'
         tests:
@@ -35,7 +39,9 @@ models:
       - name: is_superhost
         tests:
           - accepted_values:
-              values: ['t', 'f']
+              values:
+                - t
+                - f
   - name: dim_listings_w_hosts
     tests:
       - dbt_expectations.expect_table_row_count_to_equal_other_table:
@@ -45,17 +51,14 @@ models:
         tests:
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: number
-
           - dbt_expectations.expect_column_quantile_values_to_be_between:
-              quantile: .99
+              quantile: 0.99
               min_value: 50
               max_value: 500
-
           - dbt_expectations.expect_column_max_to_be_between:
               max_value: 5000
               config:
                 severity: warn
-
   - name: fct_reviews
     columns:
       - name: listing_id
@@ -69,4 +72,53 @@ models:
       - name: review_sentiment
         tests:
           - accepted_values:
-              values: ['positive', 'neutral', 'negative']
+              values:
+                - negative
+                - neutral
+                - positive
+    description: The fct_reviews model is a transformation of the raw_reviews table
+      from the AIRBNB schema. It includes the listing_id, review_date,
+      reviewer_name, review_text, and review_sentiment columns. The model also
+      generates a unique review_id for each record by concatenating and hashing
+      the listing_id, review_date, reviewer_name, and review_text. The model
+      filters out any records where the review_text is null.
+  - name: mart_fullmoon_reviews
+    columns:
+      - name: review_id
+        description: Unique identifier for each review. This is a primary key in the
+          fct_reviews table.
+        data_type: varchar
+      - name: listing_id
+        description: Unique identifier for each listing. This is a foreign key that
+          links to the listings table.
+        data_type: number
+      - name: review_date
+        description: The date when the review was made. This is a date field in the
+          format YYYY-MM-DD.
+        data_type: timestamp_ntz
+      - name: reviewer_name
+        description: The name of the individual who wrote the review. This is a string
+          field and can contain any character.
+        data_type: varchar
+      - name: review_text
+        description: The text of the review written by the reviewer. This is a string
+          field and can contain any character.
+        data_type: varchar
+      - name: review_sentiment
+        description: The sentiment of the review, determined through sentiment analysis
+          of the review text. This is a string field and can contain values such
+          as 'positive', 'negative', or 'neutral'.
+        data_type: varchar
+      - name: is_full_moon
+        description: This column indicates whether the review was made on a full moon
+          day or not. The value 'full moon' indicates that the review was made
+          on a full moon day, while 'not full moon' indicates that the review
+          was made on a day that was not a full moon.
+        data_type: varchar
+    description: The 'mart_fullmoon_reviews' model is a transformation of the
+      'fct_reviews' table from the 'AIRBNB.DEV' schema. It includes all columns
+      from the 'fct_reviews' table and adds a new column 'is_full_moon'. This
+      column is determined by joining the 'fct_reviews' table with the
+      'seed_full_moon_dates' table, also from the 'AIRBNB.DEV' schema. If the
+      review date is one day after a full moon date, the 'is_full_moon' column
+      is set to 'full moon', otherwise it is set to 'not full moon'.
